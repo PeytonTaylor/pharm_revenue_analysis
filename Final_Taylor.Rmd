@@ -1,0 +1,199 @@
+---
+title: "Final"
+author: "Peyton Taylor"
+date: "5/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r, echo=FALSE}
+
+final_data<-read.csv("http://cybercyclone.com/econ/classes/Econ4085/g2FOI_data.csv")
+require(quantmod)
+
+my_accuracy_msfe<-function(actual, prediction)
+{
+  rmsfe<-sqrt(sum(actual-prediction)^2/length(actual))
+  return(rmsfe)
+}
+
+xbar<-mean(final_data$revenue)
+
+## average revenue
+
+x_bar<-rep(mean(final_data$revenue),10)
+
+folds<-sample(1:10,nrow(final_data),replace = TRUE)
+final_data$folds<-folds
+
+```
+
+## Model 1 (rmsfe)
+
+```{r, echo=TRUE}
+
+avg_rev<-rep(NA,10)
+rmsfe<-rep(NA,10)
+
+for (i in 1:10) {
+  avg_rev[i]<-mean(final_data$revenue[!(final_data$folds==i)])
+  rmsfe[i]<-my_accuracy_msfe(actual=final_data$revenue[final_data$folds==i], prediction=avg_rev[i])
+}
+
+plot(x=1:10,
+     y=rmsfe,
+     type="b",
+     xlab="Fold",
+     ylab="Root Mean Squared Forecast Error",
+     las=1,
+     lwd=2,
+     main=expression(bar(X)))
+
+points(x=1:10, y=x_bar, type ="l", col= "red", lwd =2)
+
+```
+
+## Model 2 (day, price)
+
+```{r, echo=TRUE}
+
+rmsfe_price<-rep(NA,10)
+for (i in 1:10) {
+  model_3<-lm(revenue~day+price, data=final_data[!(final_data$folds==i),])
+  rmsfe_price[i]<-my_accuracy_msfe(actual=final_data$revenue[final_data$folds==i], prediction = predict(model_3, newdata=final_data[final_data$folds==i,]))
+}
+
+plot(x=1:10,
+     y=rmsfe_price,
+     ylim=range(c(rmsfe_price,rmsfe)),
+     type="b",
+     col = "red",
+     xlab="Fold",
+     ylab = "Root Mean Squared Forecast Error",
+     las=1,
+     lwd=2,
+     main=expression(revenue[i]==beta[0]+beta[1]*day[i]+beta[2]*price[i]+epsilon[i]))
+
+points(x=1:10,
+       y=rmsfe,
+       type="b",
+       lwd=1,
+       col="black")
+legend("topright",legend=c("Model 1","Model 2"),col=c("black","red"),lty=c(1,1),lwd=c(2,2))
+
+```
+
+## Model 3 (day, price, unit, manufactuer)
+
+```{r, echo=TRUE}
+
+rmsfe_Manu<-rep(NA,10)
+for (i in 1:10) {
+  model_4<-lm(revenue~day+price+unit+manufacturer, data=final_data[!(final_data$folds==i),])
+  rmsfe_Manu[i]<-my_accuracy_msfe(actual=final_data$revenue[final_data$folds==i], prediction = predict(model_4, newdata=final_data[final_data$folds==i,]))
+}
+
+plot(x=1:10,
+     y=rmsfe_Manu,
+     ylim=range(c(rmsfe_Manu,rmsfe)),
+     type="b",
+     col = "red",
+     xlab="Fold",
+     ylab = "Root Mean Squared Forecast Error",
+     las=1,
+     lwd=2,
+     main=expression(revenue[i]==beta[0]+beta[1]*day[i]+beta[2]*price[i]+Psi*Manu[i]+epsilon[i]))
+
+points(x=1:10,
+       y=rmsfe,
+       type="b",
+       lwd=1,
+       col="black")
+legend("topright",legend=c("Model 1","Model 3"),col=c("black","red"),lty=c(1,1),lwd=c(2,2))
+```
+
+## Model 4
+
+```{r, echo=TRUE}
+
+rmsfe_pharmForm<-rep(NA,10)
+for (i in 1:10) {
+  model_4<-lm(revenue~day+price+unit+manufacturer+pharmForm, data=final_data[!(final_data$folds==i),])
+  rmsfe_pharmForm[i]<-my_accuracy_msfe(actual=final_data$revenue[final_data$folds==i], prediction = predict(model_4, newdata=final_data[final_data$folds==i,]))
+}
+
+plot(x=1:10,
+     y=rmsfe_pharmForm,
+     ylim=range(c(rmsfe_pharmForm,rmsfe)),
+     type="b",
+     col = "red",
+     xlab="Fold",
+     ylab = "Root Mean Squared Forecast Error",
+     las=1,
+     lwd=2,
+     main=expression(revenue[i]==beta[0]+beta[1]*day[i]+beta[2]*price[i]+ beta[3]*unit+beta[4]*pharmForm+Psi*Manu[i]+epsilon[i]))
+
+points(x=1:10,
+       y=rmsfe,
+       type="b",
+       lwd=1,
+       col="black")
+legend("topright",legend=c("Model 1","Model 4"),col=c("black","red"),lty=c(1,1),lwd=c(2,2))
+
+```
+
+## Model 5
+
+```{r, echo=TRUE}
+
+rmsfe_salesIndex<-rep(NA,10)
+for (i in 1:10) {
+  model_4<-lm(revenue~day+manufacturer+basket+availability+price+adFlag+unit+rrp+salesIndex, data=final_data[!(final_data$folds==i),])
+  rmsfe_salesIndex[i]<-my_accuracy_msfe(actual=final_data$revenue[final_data$folds==i], prediction = predict(model_4, newdata=final_data[final_data$folds==i,]))
+}
+
+plot(x=1:10,
+     y=rmsfe_salesIndex,
+     ylim=range(c(rmsfe_salesIndex,rmsfe)),
+     type="b",
+     col = "red",
+     xlab="Fold",
+     ylab = "Root Mean Squared Forecast Error",
+     las=1,
+     lwd=2,
+     main=expression(revenue[i]==beta[0]+beta[1]*day[i]+beta[2]+beta[3]*basket[i]+beta[4]*availability[i]+beta[5]*price[i]+beta[6]*adFlag[i]+beta[7]*unit[i]+beta[8]*rrp[i]+beta[7]*salesIndex[i]+Psi*Manu[i]+epsilon[i]))
+
+points(x=1:10,
+       y=rmsfe,
+       type="b",
+       lwd=1,
+       col="black")
+legend("topright",legend=c("Model 1","Model 5"),col=c("black","red"),lty=c(1,1),lwd=c(2,2))
+```
+
+## Conclusions
+
+```{r, echo=TRUE}
+
+rmsfe_df<-data.frame(rmsfe, rmsfe_price,rmsfe_Manu, rmsfe_pharmForm, rmsfe_salesIndex)
+names(rmsfe_df)<-c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5")
+
+print(rmsfe_df)
+
+outcomes<-c(length(which(rmsfe_price<rmsfe)==TRUE), 
+            length(which(rmsfe_Manu<rmsfe)==TRUE),
+            length(which(rmsfe_pharmForm<rmsfe)==TRUE), 
+            length(which(rmsfe_salesIndex<rmsfe)==TRUE))
+
+names(outcomes)<-c("Model 2 Wins", "Model 3 Wins", "Model 4 Wins", "Model 5 Wins")
+
+print(outcomes)
+
+```
+
+After testing several models, Model #4 had the best performance with nine out of ten wins when compared against Model #1.
